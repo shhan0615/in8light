@@ -1,0 +1,33 @@
+# Netlify 설정 파일
+# IN8LIGHT 프로젝트
+
+[build]
+  # 빌드 명령어 (정적 사이트이므로 빌드 불필요)
+  command = "echo 'No build required'"
+  
+  # 배포할 디렉토리 (현재 디렉토리)
+  publish = "."
+  
+  # Functions 디렉토리
+  functions = "netlify/functions"
+
+# Functions 설정
+[functions]
+  # Node.js 버전
+  node_bundler = "esbuild"
+
+# 리다이렉트 및 재작성 규칙
+[[redirects]]
+  # API 엔드포인트를 Functions로 라우팅
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# 보안 헤더
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"

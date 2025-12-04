@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IN8 - 로딩중</title>
+    
+    <!-- PWA 설정 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="in8">
+    <link rel="apple-touch-icon" href="images/icon-192.png">
+    
+    <!-- 설정 및 보안 스크립트 -->
+    <script src="js/config.js"></script>
+    <script src="js/security.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .splash-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding-top: 5vh;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .logo {
+            font-size: 60px;
+            font-weight: 700;
+            color: #000000;
+            letter-spacing: 2px;
+            animation: scaleUp 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            transform-origin: center;
+        }
+
+        .version {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666666;
+            opacity: 0;
+            animation: fadeInVersion 0.5s ease-out 1.5s forwards;
+            letter-spacing: 1px;
+        }
+
+        @keyframes scaleUp {
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInVersion {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-container">
+        <div class="logo">IN8</div>
+    </div>
+
+    <script>
+        // 2초 후 페이드아웃 시작하고 home.html로 이동 (v1.3 업데이트)
+        setTimeout(() => {
+            document.body.classList.add('fade-out');
+            
+            // 페이드아웃 애니메이션 완료 후 페이지 이동
+            setTimeout(() => {
+                window.location.href = 'home.html';
+            }, 500);
+        }, 2000);
+    </script>
+</body>
+</html>

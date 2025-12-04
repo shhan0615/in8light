@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IN8 - 홈</title>
+    
+    <!-- PWA 설정 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="in8">
+    <link rel="apple-touch-icon" href="images/icon-192.png">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/diet-table.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Kakao SDK -->
+    <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
+    
+    <!-- Excel Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="no-select home-body">
+    <!-- 헤더 -->
+    <header class="home-header">
+        <div class="header-left">
+            <h1 class="logo-text">
+                <svg width="28" height="28" viewBox="0 0 100 100" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
+                    <!-- 8개 잎을 가진 나뭇잎 -->
+                    <g transform="translate(50,50)">
+                        <!-- 중앙 원 -->
+                        <circle cx="0" cy="0" r="8" fill="#2E7D32"/>
+                        <!-- 8개의 잎 (가로/세로는 더 진한 #2E7D32, 대각선은 밝은 #66BB6A) -->
+                        <ellipse cx="0" cy="-25" rx="6" ry="20" fill="#2E7D32"/>
+                        <ellipse cx="18" cy="-18" rx="6" ry="20" fill="#66BB6A" transform="rotate(45 18 -18)"/>
+                        <ellipse cx="25" cy="0" rx="6" ry="20" fill="#2E7D32" transform="rotate(90 25 0)"/>
+                        <ellipse cx="18" cy="18" rx="6" ry="20" fill="#66BB6A" transform="rotate(135 18 18)"/>
+                        <ellipse cx="0" cy="25" rx="6" ry="20" fill="#2E7D32" transform="rotate(180 0 25)"/>
+                        <ellipse cx="-18" cy="18" rx="6" ry="20" fill="#66BB6A" transform="rotate(225 -18 18)"/>
+                        <ellipse cx="-25" cy="0" rx="6" ry="20" fill="#2E7D32" transform="rotate(270 -25 0)"/>
+                        <ellipse cx="-18" cy="-18" rx="6" ry="20" fill="#66BB6A" transform="rotate(315 -18 -18)"/>
+                    </g>
+                </svg>
+                IN8
+            </h1>
+        </div>
+        
+        <!-- 한의원 정보 (v0.8.4: 제거됨) -->
+        
+        <div class="header-right">
+            <button class="icon-btn notification-btn" onclick="showComingSoon('알림')" title="알림">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+            </button>
+            <button class="text-btn login-btn" onclick="toggleLoginScreen()" id="loginBtn">로그인</button>
+            <button class="icon-btn menu-btn" onclick="toggleDrawer()" title="메뉴">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- 서랍 메뉴 오버레이 -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+    <!-- 서랍 메뉴 -->
+    <nav class="drawer" id="drawer">
+        <!-- 프로필 섹션 -->
+        <div class="drawer-profile">
+            <div class="profile-avatar" id="profileAvatar">👤</div>
+            <div class="profile-info">
+                <div class="profile-name" id="profileName">게스트</div>
+                <div class="profile-email" id="profileEmail">로그인이 필요합니다</div>
+                <div class="profile-constitution" id="profileConstitution" style="font-size: 13px; color: #ffffff; margin-top: 4px; font-weight: 600;"></div>
+                <div class="profile-login-time" id="profileLoginTime" style="font-size: 12px; color: #999; margin-top: 4px;"></div>
+            </div>
+        </div>
+
+        <!-- 메뉴 섹션 -->
+        <div class="drawer-section">
+            <a href="#" class="drawer-item" onclick="toggleLoginScreen(); closeDrawer(); return false;" id="drawerLoginItem">
+                <span class="drawer-icon">🔐</span>
+                <span>로그인</span>
+            </a>
+            <a href="#" class="drawer-item hidden" onclick="goToAdmin(); return false;" id="adminMenuItem">
+                <span class="drawer-icon">⚙️</span>
+                <span>관리자</span>
+            </a>
+            <a href="#" class="drawer-item" onclick="goToHistory(); return false;" id="historyMenuItem">
+                <span class="drawer-icon">📋</span>
+                <span>설문기록</span>
+            </a>
+            <a href="#" class="drawer-item" onclick="goToFamily(); return false;">
+                <span class="drawer-icon">👨‍👩‍👧‍👦</span>
+                <span>우리가족</span>
+            </a>
+            <a href="#" class="drawer-item" onclick="shareKakaoApp(); return false;">
+                <span class="drawer-icon">📤</span>
+                <span>앱공유하기</span>
+            </a>
+        </div>
+
+        <div class="drawer-divider"></div>
+
+        <div class="drawer-section">
+            <a href="#" class="drawer-item" onclick="goToSurvey(); return false;">
+                <span class="drawer-icon">📝</span>
+                <span>설문</span>
+            </a>
+            <a href="#" class="drawer-item" onclick="goToQuestion(); return false;">
+                <span class="drawer-icon">📋</span>
+                <span>게시판</span>
+            </a>
+            <a href="#" class="drawer-item" onclick="goToDietTable(); return false;">
+                <span class="drawer-icon">🍀</span>
+                <span>섭생표</span>
+            </a>
+            <a href="#" class="drawer-item" onclick="goToHospital(); return false;">
+                <span class="drawer-icon">🏥</span>
+                <span>병원</span>
+            </a>
+            <!-- <a href="#" class="drawer-item" onclick="showComingSoon('마켓'); return false;">
+                <span class="drawer-icon">🛒</span>
+                <span>마켓</span>
+                <span class="badge-coming">준비중</span>
+            </a> -->
+            <!-- <a href="#" class="drawer-item" onclick="showComingSoon('식단관리'); return false;">
+                <span class="drawer-icon">🍽️</span>
+                <span>식단관리</span>
+                <span class="badge-coming">준비중</span>
+            </a> -->
+        </div>
+
+        <div class="drawer-divider"></div>
+
+        <div class="drawer-section">
+            <a href="#" class="drawer-item" onclick="showContact(); return false;">
+                <span class="drawer-icon">📧</span>
+                <span>문의</span>
+            </a>
+        </div>
+
+        <div class="drawer-divider"></div>
+
+        <div class="drawer-section">
+            <a href="#" class="drawer-item danger" onclick="deleteAccountFromDrawer(); return false;" id="deleteAccountMenuItem">
+                <span class="drawer-icon">⚠️</span>
+                <span>회원탈퇴</span>
+            </a>
+        </div>
+
+        <!-- 앱 정보 영역 -->
+        <div class="drawer-footer">
+            <div class="footer-version" id="drawerVersionInfo">Version 0.6.9</div>
+            <div class="footer-links">
+                <a href="about.html">앱 정보</a>
+                <span class="divider">|</span>
+                <a href="terms.html">이용약관</a>
+                <span class="divider">|</span>
+                <a href="privacy.html">개인정보처리방침</a>
+            </div>
+            <div class="footer-copyright">© 2025 Infobank All rights reserved</div>
+        </div>
+    </nav>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="home-main">
+        <div class="home-content">
+            <!-- 홈 화면 (기본) -->
+            <div id="homeContent">
+                <!-- 메인 섹션 -->
+                <div class="home-hero">
+                    <!-- 병원/IN8 로고와 병원명 (v0.8.4: 가로 정렬) -->
+                    <div class="hero-icon-wrapper" id="heroIconWrapper">
+                        <div class="hero-icon" id="heroIconContainer">
+                            <!-- 기본 IN8 로고 SVG -->
+                            <svg id="defaultHeroLogo" width="100" height="100" viewBox="0 0 100 100" fill="none">
+                                <g transform="translate(50,50)">
+                                    <circle cx="0" cy="0" r="10" fill="#1B5E20"/>
+                                    <ellipse cx="0" cy="-30" rx="8" ry="25" fill="#2E7D32"/>
+                                    <ellipse cx="21" cy="-21" rx="8" ry="25" fill="#66BB6A" transform="rotate(45 21 -21)"/>
+                                    <ellipse cx="30" cy="0" rx="8" ry="25" fill="#2E7D32" transform="rotate(90 30 0)"/>
+                                    <ellipse cx="21" cy="21" rx="8" ry="25" fill="#66BB6A" transform="rotate(135 21 21)"/>
+                                    <ellipse cx="0" cy="30" rx="8" ry="25" fill="#2E7D32" transform="rotate(180 0 30)"/>
+                                    <ellipse cx="-21" cy="21" rx="8" ry="25" fill="#66BB6A" transform="rotate(225 -21 21)"/>
+                                    <ellipse cx="-30" cy="0" rx="8" ry="25" fill="#2E7D32" transform="rotate(270 -30 0)"/>
+                                    <ellipse cx="-21" cy="-21" rx="8" ry="25" fill="#66BB6A" transform="rotate(315 -21 -21)"/>
+                                </g>
+                            </svg>
+                            <!-- 병원 로고 이미지 (병원 선택 시 표시) -->
+                            <img id="hospitalHeroLogo" src="" alt="병원 로고" style="display: none; width: 100px; height: 100px; object-fit: contain; border-radius: 12px;">
+                        </div>
+                        
+                        <!-- IN8 텍스트 (로그아웃 시 표시, v0.8.5) -->
+                        <h2 id="defaultHeroName" class="hero-hospital-name" style="display: block;">IN8</h2>
+                        
+                        <!-- 병원명 표시 (v0.8.4: 아이콘 옆에 가로 정렬) -->
+                        <h2 id="hospitalHeroName" class="hero-hospital-name" style="display: none;"></h2>
+                    </div>
+                    
+                    <h1 class="hero-title">균형잡힌 건강관리</h1>
+                    <p class="hero-subtitle">당신의 체질에 맞는 맞춤형 건강 솔루션</p>
+                </div>
+
+                <!-- 체질 카드 -->
+                <div class="constitution-cards">
+                    <div class="constitution-card-item" onclick="showConstitutionSummary('목')">
+                        <h3>목양·목음</h3>
+                        <p>간담의 기운</p>
+                    </div>
+                    <div class="constitution-card-item" onclick="showConstitutionSummary('금')">
+                        <h3>금양·금음</h3>
+                        <p>폐대장의 기운</p>
+                    </div>
+                    <div class="constitution-card-item" onclick="showConstitutionSummary('토')">
+                        <h3>토양·토음</h3>
+                        <p>비위의 기운</p>
+                    </div>
+                    <div class="constitution-card-item" onclick="showConstitutionSummary('수')">
+                        <h3>수양·수음</h3>
+                        <p>신방광의 기운</p>
+                    </div>
+                </div>
+
+                <!-- 액션 버튼 -->
+                <div class="home-actions" id="guestActions">
+                    <button class="action-btn primary" onclick="toggleLoginScreen()">
+                        <span class="btn-icon">🔐</span>
+                        <span>로그인</span>
+                    </button>
+                    <button class="action-btn secondary" onclick="startSurvey()">
+                        <span class="btn-icon">📝</span>
+                        <span>설문 시작하기</span>
+                    </button>
+                </div>
+
+                <!-- 로그인 후 액션 버튼 -->
+                <div class="home-actions hidden" id="userActions">
+                    <button class="action-btn secondary" onclick="startSurvey()">
+                        <span class="btn-icon">📝</span>
+                        <span>설문 시작하기</span>
+                    </button>
+                </div>
+
+                <!-- 바로가기 아이콘 생성 안내 (간소화) -->
+                <div class="install-hint" onclick="showInstallGuide()" id="installBtn">
+                    <span>📱 홈 화면에 추가</span>
+                </div>
+            </div>
+
+            <!-- 로그인 화면 (숨김) -->
+            <div id="loginContent" class="hidden">
+                <div class="login-container">
+                    <!-- 카카오 로그인 -->
+                    <button class="btn-kakao" onclick="kakaoLogin()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
+                            <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/>
+                        </svg>
+                        카카오 간편 로그인
+                    </button>
+
+                    <!-- 구분선 -->
+                    <div class="divider-line">
+                        <span>또는</span>
+                    </div>
+
+                    <!-- 간편 로그인 폼 -->
+                    <div class="login-form">
+                        <div class="form-group">
+                            <label for="userName">이름 <span class="required">*</span></label>
+                            <input type="text" id="userName" placeholder="이름을 입력하세요 (2-20자)" maxlength="20">
+                        </div>
+                        <div class="form-group">
+                            <label for="eMail">이메일 <span class="required">*</span></label>
+                            <input type="email" id="eMail" placeholder="example@domain.com" maxlength="100">
+                        </div>
+                        <p class="login-info">
+                            💡 간편 로그인: 이름과 이메일을 입력하시면 바로 시작할 수 있습니다.
+                        </p>
+                        <button class="btn-start" onclick="simpleLogin()">🚀 시작</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 설문 진행 화면 (숨김) -->
+            <div id="surveyContent" class="hidden">
+                <div class="survey-container">
+                    <div class="progress-container">
+                        <div class="progress-info">
+                            <span class="progress-text" id="progressText">진행률</span>
+                            <span id="progressPercentage">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" id="progressBar"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="questionContainer"></div>
+                    
+                    <div class="survey-navigation">
+                        <button class="btn btn-secondary" onclick="previousQuestion()" id="prevBtn">◀ 이전</button>
+                        <button class="btn" onclick="quitSurvey()">그만하기</button>
+                        <button class="btn btn-danger" onclick="nextQuestion()" id="nextBtn">다음 ▶</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 결과 화면 (숨김) -->
+            <div id="resultContent" class="hidden">
+                <div class="result-container">
+                    <h2 style="text-align: center; margin-bottom: 20px;">🎉 IN8 결과</h2>
+                    <div id="resultContainer"></div>
+                    
+                    <div class="result-actions" style="margin-top: 30px;">
+                        <button class="action-btn" onclick="shareFinalResult()" style="background: #FEE500; color: #3C1E1E; border: none; font-weight: 600;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
+                                <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/>
+                            </svg>
+                            <span>카카오톡 공유</span>
+                        </button>
+                        <button class="action-btn primary" onclick="restartSurvey()">
+                            <span class="btn-icon">🔄</span>
+                            <span>다시 검사</span>
+                        </button>
+                        <button class="action-btn secondary" onclick="showHomeFromResult()">
+                            <span class="btn-icon">🏠</span>
+                            <span>홈으로</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 검사기록 화면 (숨김) -->
+            <div id="historyContent" class="hidden">
+                <div class="history-container">
+                    <h2 style="text-align: center; margin-bottom: 20px;">📋 내 설문 기록</h2>
+                    <div id="historyContainer"></div>
+                    
+                    <div class="result-actions" style="margin-top: 30px;">
+                        <button class="action-btn primary" onclick="restartSurvey()">
+                            <span class="btn-icon">📝</span>
+                            <span>새로운 검사</span>
+                        </button>
+                        <button class="action-btn secondary" onclick="showHomeFromHistory()">
+                            <span class="btn-icon">🏠</span>
+                            <span>홈으로</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 한의원 소개 화면 (숨김) -->
+            <div id="hospitalContent" class="hidden">
+                <div class="hospital-container">
+                    <div class="hospital-info-wrapper">
+                        <!-- 한의원 로고 -->
+                        <div id="hospitalContentLogo" class="hospital-content-logo"></div>
+                        
+                        <!-- 한의원 이름 -->
+                        <h2 id="hospitalContentName" class="hospital-content-name"></h2>
+                        
+                        <!-- 한의원 소개 -->
+                        <div id="hospitalContentDescription" class="hospital-content-description"></div>
+                        
+                        <!-- 한의원 사진 -->
+                        <div id="hospitalContentImage" class="hospital-content-image" style="margin-top: 20px; display: none;">
+                            <img id="hospitalImage" src="" alt="한의원 사진" style="width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        </div>
+                        
+                        <!-- 홈페이지 링크 -->
+                        <div id="hospitalContentWebsite" class="hospital-content-website" style="margin-top: 20px; text-align: center; display: none;">
+                            <a id="hospitalWebsiteLink" href="" target="_blank" rel="noopener noreferrer" 
+                               style="display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: transform 0.2s;">
+                                🌐 홈페이지 방문하기
+                            </a>
+                        </div>
+                        
+                        <!-- 추가 정보 -->
+                        <div class="hospital-extra-info">
+                            <p style="text-align: center; color: #999; font-size: 0.9rem; margin-top: 30px;">
+                                💚 IN8과 함께하는 제휴 한의원입니다
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="result-actions" style="margin-top: 30px;">
+                        <button class="action-btn secondary" onclick="showHomeFromHospital()">
+                            <span class="btn-icon">🏠</span>
+                            <span>홈으로</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 관리자 화면 (숨김) -->
+            <div id="adminContent" class="hidden">
+                <div class="admin-container">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="text-align: center;">⚙️ 관리자 패널</h2>
+                        <div style="font-size: 0.9rem; color: #666;">
+                            👤 <strong id="adminUserInfo"></strong>님
+                        </div>
+                    </div>
+
+                    <div class="admin-tabs">
+                        <button class="tab-button active" onclick="showAdminTab('excel', event)">📊 엑셀 관리</button>
+                        <button class="tab-button" onclick="showAdminTab('users', event)">👥 회원 관리</button>
+                        <button class="tab-button" onclick="showAdminTab('hospital', event)">🏥 한의원 관리</button>
+                        <button class="tab-button" onclick="showAdminTab('results', event)">📈 결과 통계</button>
+                    </div>
+
+                    <!-- 엑셀 관리 탭 -->
+                    <div id="excelTab" class="tab-content active">
+                        <h3>📊 설문 엑셀 파일 관리</h3>
+                        <div class="form-group">
+                            <label for="surveyFile">설문 양식 및 점수 엑셀 파일 업로드</label>
+                            <div class="file-upload">
+                                <input type="file" id="surveyFile" accept=".xlsx,.xls" onchange="uploadExcel()">
+                                <label for="surveyFile" class="file-upload-label">
+                                    📁 엑셀 파일을 선택하거나 드래그하세요<br>
+                                    <small>현재 설문: <span id="currentSurveyInfo">로딩 중...</span></small>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="uploadStatus"></div>
+                    </div>
+
+                    <!-- 회원 관리 탭 -->
+                    <div id="usersTab" class="tab-content hidden">
+                        <h3>👥 회원 관리</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number" id="totalUsers">0</div>
+                                <div class="stat-label">총 사용자 수</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="kakaoUsers">0</div>
+                                <div class="stat-label">카카오 로그인</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="simpleUsers">0</div>
+                                <div class="stat-label">간편 로그인</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 회원 검색 -->
+                        <div style="background: white; border-radius: 12px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <input type="text" id="userSearchInput" placeholder="🔍 이름, 이메일, 체질로 검색..." 
+                                       style="flex: 1; min-width: 250px; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;"
+                                       onkeyup="filterUserList(event)">
+                                <button onclick="clearUserSearch()" class="action-btn secondary" style="padding: 12px 20px;">
+                                    🔄 초기화
+                                </button>
+                            </div>
+                            <div id="searchResultCount" style="margin-top: 10px; color: #666; font-size: 0.9rem;"></div>
+                        </div>
+                        
+                        <div id="userList"></div>
+                    </div>
+
+                    <!-- 결과 통계 탭 -->
+                    <div id="resultsTab" class="tab-content hidden">
+                        <h3>📈 진단 결과 통계</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number" id="totalSurveys">0</div>
+                                <div class="stat-label">총 진단 수</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="mostCommonType">-</div>
+                                <div class="stat-label">가장 많은 체질</div>
+                            </div>
+                        </div>
+                        <div id="resultsChart"></div>
+                    </div>
+
+                    <!-- 한의원 관리 탭 -->
+                    <div id="hospitalTab" class="tab-content hidden">
+                        <h3>🏥 한의원 관리</h3>
+                        
+                        <!-- 한의원 목록 -->
+                        <div id="hospitalListSection">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h4>등록된 한의원</h4>
+                                <button class="action-btn" onclick="showAddHospitalForm()">➕ 한의원 등록</button>
+                            </div>
+                            <div id="hospitalListContainer" style="margin-top: 20px;"></div>
+                        </div>
+
+                        <!-- 한의원 등록/수정 폼 -->
+                        <div id="addHospitalForm" style="display: none;">
+                            <h4 id="hospitalFormTitle" style="margin-bottom: 20px;">한의원 등록</h4>
+                            <input type="hidden" id="hospitalId">
+                            
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="hospitalName" style="display: block; margin-bottom: 8px; font-weight: 600;">
+                                    한의원명 <span style="color: #e74c3c;">*</span>
+                                </label>
+                                <input type="text" id="hospitalName" placeholder="한의원명을 입력하세요" 
+                                       style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                                    로고 이미지
+                                </label>
+                                
+                                <!-- 이미지 미리보기 -->
+                                <div id="logoPreviewContainer" style="margin-bottom: 15px; text-align: center; display: none;">
+                                    <img id="logoPreview" src="" alt="로고 미리보기" 
+                                         style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #667eea; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);">
+                                    <div style="margin-top: 10px;">
+                                        <button type="button" class="action-btn secondary" onclick="removeLogoImage()" style="padding: 6px 15px; font-size: 0.9rem;">
+                                            ❌ 이미지 제거
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- 파일 업로드 -->
+                                <div style="margin-bottom: 10px;">
+                                    <input type="file" id="hospitalLogoFile" accept="image/*" onchange="handleLogoFileSelect(event)" 
+                                           style="display: none;">
+                                    <button type="button" onclick="document.getElementById('hospitalLogoFile').click()" 
+                                            class="action-btn" style="width: 100%; padding: 12px;">
+                                        📁 이미지 파일 선택
+                                    </button>
+                                </div>
+                                
+                                <!-- 구분선 -->
+                                <div style="display: flex; align-items: center; margin: 15px 0;">
+                                    <div style="flex: 1; height: 1px; background: #e1e5e9;"></div>
+                                    <span style="padding: 0 15px; color: #999; font-size: 0.9rem;">또는</span>
+                                    <div style="flex: 1; height: 1px; background: #e1e5e9;"></div>
+                                </div>
+                                
+                                <!-- URL 입력 -->
+                                <input type="text" id="hospitalLogoUrl" placeholder="이미지 URL을 직접 입력하세요" 
+                                       onchange="handleLogoUrlChange()"
+                                       style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                                <small style="color: #666; font-size: 0.85rem; margin-top: 5px; display: block;">
+                                    💡 파일 선택 또는 이미지 URL 입력 (권장: 200x200px 이상, 정사각형)
+                                </small>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="hospitalDescription" style="display: block; margin-bottom: 8px; font-weight: 600;">
+                                    한의원 소개
+                                </label>
+                                <textarea id="hospitalDescription" placeholder="한의원 소개글을 입력하세요" 
+                                          style="min-height: 150px; width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; resize: vertical; font-family: inherit;"></textarea>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="hospitalImageUrl" style="display: block; margin-bottom: 8px; font-weight: 600;">
+                                    한의원 사진 URL
+                                </label>
+                                <input type="url" id="hospitalImageUrl" placeholder="한의원 사진 URL을 입력하세요 (예: https://example.com/image.jpg)" 
+                                       style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                                <small style="color: #666; font-size: 0.85rem; margin-top: 5px; display: block;">
+                                    💡 병원 소개 페이지에 표시될 사진 URL (선택사항)
+                                </small>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="hospitalWebsiteUrl" style="display: block; margin-bottom: 8px; font-weight: 600;">
+                                    홈페이지 주소
+                                </label>
+                                <input type="url" id="hospitalWebsiteUrl" placeholder="홈페이지 주소를 입력하세요 (예: https://hospital.com)" 
+                                       style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                                <small style="color: #666; font-size: 0.85rem; margin-top: 5px; display: block;">
+                                    💡 클릭 시 해당 홈페이지로 이동 (선택사항)
+                                </small>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                                <button type="button" class="action-btn secondary" onclick="cancelHospitalForm()" style="flex: 1;">취소</button>
+                                <button type="button" class="action-btn" onclick="saveHospital()" style="flex: 1;">💾 저장</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-actions" style="margin-top: 30px;">
+                        <button class="action-btn secondary" onclick="showHomeFromAdmin()">
+                            <span class="btn-icon">🏠</span>
+                            <span>홈으로</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 섭생표 화면 (숨김) -->
+            <div id="dietTableContent" class="hidden">
+                <div class="diet-table-container">
+                    <!-- 체질 선택 화면 -->
+                    <div id="constitutionSelect" class="constitution-select">
+                        <div class="intro-section">
+                            <div class="intro-icon">🍀</div>
+                            <h2>체질을 선택하세요</h2>
+                            <p>각 체질에 맞는 음식 섭생표를 확인할 수 있습니다</p>
+                        </div>
+                        
+                        <div class="constitution-grid">
+                            <button class="constitution-card wood-yang" onclick="selectConstitution('목양')">
+                                <div class="card-icon">🌳</div>
+                                <div class="card-name">목양체질</div>
+                                <div class="card-subtitle">Pulmotonia</div>
+                            </button>
+                            
+                            <button class="constitution-card wood-eum" onclick="selectConstitution('목음')">
+                                <div class="card-icon">🌲</div>
+                                <div class="card-name">목음체질</div>
+                                <div class="card-subtitle">Colonotonia</div>
+                            </button>
+                            
+                            <button class="constitution-card earth-yang" onclick="selectConstitution('토양')">
+                                <div class="card-icon">🏔️</div>
+                                <div class="card-name">토양체질</div>
+                                <div class="card-subtitle">Pancreotonia</div>
+                            </button>
+                            
+                            <button class="constitution-card earth-eum" onclick="selectConstitution('토음')">
+                                <div class="card-icon">⛰️</div>
+                                <div class="card-name">토음체질</div>
+                                <div class="card-subtitle">Gastrotonia</div>
+                            </button>
+                            
+                            <button class="constitution-card metal-yang" onclick="selectConstitution('금양')">
+                                <div class="card-icon">⚡</div>
+                                <div class="card-name">금양체질</div>
+                                <div class="card-subtitle">Hepatonia</div>
+                            </button>
+                            
+                            <button class="constitution-card metal-eum" onclick="selectConstitution('금음')">
+                                <div class="card-icon">💫</div>
+                                <div class="card-name">금음체질</div>
+                                <div class="card-subtitle">Cholecystonia</div>
+                            </button>
+                            
+                            <button class="constitution-card water-yang" onclick="selectConstitution('수양')">
+                                <div class="card-icon">💧</div>
+                                <div class="card-name">수양체질</div>
+                                <div class="card-subtitle">Renotonia</div>
+                            </button>
+                            
+                            <button class="constitution-card water-eum" onclick="selectConstitution('수음')">
+                                <div class="card-icon">🌊</div>
+                                <div class="card-name">수음체질</div>
+                                <div class="card-subtitle">Vesicotonia</div>
+                            </button>
+                        </div>
+                        
+                        <div class="info-footer">
+                            <p class="info-text">※ 출처: 8체질의학(http://ecmed.org/)</p>
+                        </div>
+                    </div>
+
+                    <!-- 음식 목록 화면 -->
+                    <div id="foodList" class="food-list hidden">
+                        <div class="list-header">
+                            <button class="change-constitution-btn" onclick="showConstitutionSelect()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="15 18 9 12 15 6"/>
+                                </svg>
+                                <span id="selectedConstitutionName">목양체질</span>
+                            </button>
+                        </div>
+
+                        <!-- 검색 및 필터 섹션 -->
+                        <div class="search-filter-section">
+                            <div class="search-box">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="m21 21-4.35-4.35"/>
+                                </svg>
+                                <input type="text" id="searchInput" placeholder="음식명을 검색하세요" oninput="filterFoods()">
+                                <button class="clear-btn" onclick="clearSearch()" id="clearBtn" style="display: none;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="filter-section">
+                                <div class="filter-label">필터:</div>
+                                <div class="filter-buttons">
+                                    <button class="filter-btn active" data-rating="all" onclick="toggleFilter(this, 'all')">
+                                        전체
+                                    </button>
+                                    <button class="filter-btn" data-rating="OO" onclick="toggleFilter(this, 'OO')">
+                                        <span class="rating-icon oo">●●</span>
+                                    </button>
+                                    <button class="filter-btn" data-rating="O" onclick="toggleFilter(this, 'O')">
+                                        <span class="rating-icon o">●</span>
+                                    </button>
+                                    <button class="filter-btn" data-rating="Δ" onclick="toggleFilter(this, 'Δ')">
+                                        <span class="rating-icon delta">△</span>
+                                    </button>
+                                    <button class="filter-btn" data-rating="X" onclick="toggleFilter(this, 'X')">
+                                        <span class="rating-icon x">✕</span>
+                                    </button>
+                                    <button class="filter-btn" data-rating="XX" onclick="toggleFilter(this, 'XX')">
+                                        <span class="rating-icon xx">✕✕</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 음식 목록 -->
+                        <div id="foodItemsContainer" class="food-items-container">
+                            <!-- 음식 항목들이 여기 동적으로 추가됩니다 -->
+                        </div>
+
+                        <!-- 검색 결과 없음 메시지 -->
+                        <div id="noResultsMessage" class="no-results hidden">
+                            <div class="no-results-icon">🔍</div>
+                            <p>검색 결과가 없습니다</p>
+                        </div>
+                    </div>
+
+                    <!-- 범례 팝업 -->
+                    <div class="legend-popup" id="legendPopup">
+                        <div class="legend-content">
+                            <h3>섭생표 기호 설명</h3>
+                            <div class="legend-items">
+                                <div class="legend-item">
+                                    <span class="rating-badge oo">●●</span>
+                                    <span class="legend-text">매우 좋음 - 적극 권장</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="rating-badge o">●</span>
+                                    <span class="legend-text">좋음 - 권장</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="rating-badge delta">△</span>
+                                    <span class="legend-text">보통 - 무관</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="rating-badge x">✕</span>
+                                    <span class="legend-text">나쁨 - 주의</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="rating-badge xx">✕✕</span>
+                                    <span class="legend-text">매우 나쁨 - 금지</span>
+                                </div>
+                            </div>
+                            <button class="close-legend-btn" onclick="closeLegend()">확인</button>
+                        </div>
+                    </div>
+
+                    <div class="result-actions" style="margin-top: 30px;">
+                        <button class="action-btn secondary" onclick="showHomeFromDietTable()">
+                            <span class="btn-icon">🏠</span>
+                            <span>홈으로</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 우리가족 화면 (숨김) -->
+            <div id="familyContent" class="hidden">
+                <div class="family-container">
+                    <h2 style="text-align: center; margin-bottom: 20px;">👨‍👩‍👧‍👦 우리가족</h2>
+                    
+                    <!-- 음식 검색 섹션 -->
+                    <div class="family-search-section">
+                        <div class="search-box" style="margin-bottom: 20px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.35-4.35"/>
+                            </svg>
+                            <input type="text" id="familySearchInput" placeholder="음식명을 검색하세요" oninput="searchFoodForFamily()">
+                            <button class="clear-btn" onclick="clearFamilySearch()" id="familyClearBtn" style="display: none;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- 검색 결과 -->
+                        <div id="familySearchResults" class="hidden" style="margin-bottom: 30px;">
+                            <h3 style="font-size: 1rem; color: #667eea; margin-bottom: 15px;">검색 결과</h3>
+                            <div id="familySearchResultsContainer"></div>
+                        </div>
+                    </div>
+
+                    <!-- 가족 등록 버튼 -->
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <button class="action-btn primary" onclick="showAddFamilyPopup()">
+                            <span class="btn-icon">➕</span>
+                            <span>가족 등록하기</span>
+                        </button>
+                    </div>
+
+                    <!-- 등록된 가족 목록 -->
+                    <div class="family-list-section">
+                        <h3 style="font-size: 1.1rem; color: #667eea; margin-bottom: 15px;">등록된 가족</h3>
+                        <div id="familyListContainer">
+                            <!-- 가족 목록이 여기에 동적으로 추가됩니다 -->
+                        </div>
+                        <div id="noFamilyMessage" class="no-results">
+                            <div class="no-results-icon">👨‍👩‍👧‍👦</div>
+                            <p>등록된 가족이 없습니다</p>
+                            <p style="font-size: 0.9rem; color: #999;">가족 등록하기 버튼을 눌러 가족을 추가하세요</p>
+                        </div>
+                    </div>
+
+                    <div class="result-actions" style="margin-top: 30px;">
+                        <button class="action-btn secondary" onclick="showHomeFromFamily()">
+                            <span class="btn-icon">🏠</span>
+                            <span>홈으로</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 게시판 화면 (숨김) -->
+            <div id="questionContent" class="hidden">
+                <div class="question-container">
+                    <h2 style="text-align: center; margin-bottom: 20px;">📋 게시판</h2>
+                    
+                    <!-- 게시글 작성 버튼 -->
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <button class="action-btn primary" onclick="showWriteQuestionForm()">
+                            <span class="btn-icon">✏️</span>
+                            <span>질문 작성하기</span>
+                        </button>
+                    </div>
+
+                    <!-- 게시글 목록 -->
+                    <div id="questionList" class="question-list">
+                        <div id="questionListContainer">
+                            <!-- 게시글 목록이 여기에 동적으로 추가됩니다 -->
+                        </div>
+                        <div id="noQuestionMessage" class="no-results">
+                            <div class="no-results-icon">📝</div>
+                            <p>아직 등록된 질문이 없습니다</p>
+                            <p style="font-size: 0.9rem; color: #999;">첫 질문을 등록해보세요!</p>
+                        </div>
+                    </div>
+
+                    <!-- 게시글 작성/수정 폼 -->
+                    <div id="questionFormSection" class="question-form-section hidden">
+                        <h3 id="formTitle" style="margin-bottom: 20px;">질문 작성</h3>
+                        <input type="hidden" id="editQuestionId" value="">
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">제목</label>
+                            <input type="text" id="questionTitle" placeholder="제목을 입력하세요" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">내용</label>
+                            <textarea id="questionContentInput" placeholder="내용을 입력하세요" style="width: 100%; min-height: 150px; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; resize: vertical;"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="action-btn secondary" onclick="cancelQuestionForm()" style="flex: 1;">취소</button>
+                            <button class="action-btn primary" onclick="submitQuestion()" style="flex: 1;">등록</button>
+                        </div>
+                    </div>
+
+                    <!-- 게시글 상세보기 -->
+                    <div id="questionDetailSection" class="question-detail-section hidden">
+                        <div id="questionDetailContainer">
+                            <!-- 게시글 상세 내용이 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+
+                    <div class="result-actions" style="margin-top: 30px;">
+                        <button class="action-btn secondary" onclick="showHomeFromQuestion()">
+                            <span class="btn-icon">🏠</span>
+                            <span>홈으로</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI 상담 화면 (숨김) -->
+            <div id="aiChatContent" class="hidden">
+                <div class="ai-chat-container">
+                    <div class="ai-chat-header">
+                        <h2>👩‍⚕️ 8체질 AI 상담</h2>
+                        <p style="font-size: 0.8rem; color: #ffffff; margin-top: 5px;">8체질 식이요법과 건강에 대해 궁금한 점을 물어보세요</p>
+                    </div>
+
+                    <!-- 채팅 메시지 영역 -->
+                    <div id="aiChatMessages" class="ai-chat-messages">
+                        <div class="ai-message welcome-message">
+                            <div class="message-avatar">👩‍⚕️</div>
+                            <div class="message-bubble">
+                                <p>안녕하세요! 8체질 AI 상담입니다.</p>
+                                <p style="margin-top: 10px;">저는 8체질 이론(목양, 목음, 금양, 금음, 토양, 토음, 수양, 수음)에 기반한 식이요법과 건강 관리에 대해 도움을 드립니다.</p>
+                                <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">💡 질문 예시:</p>
+                                <ul style="margin-top: 5px; font-size: 0.9rem; color: #666; padding-left: 20px;">
+                                    <li>목양 체질에 좋은 음식은 무엇인가요?</li>
+                                    <li>당근은 금양 체질에 좋은가요?</li>
+                                    <li>밀가루는 어느 체질에 나쁜가요?</li>
+                                    <li>정확한 체질 검사는 어떻게 받나요?</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 입력 영역 -->
+                    <div class="ai-chat-input-area">
+                        <div class="ai-chat-input-container">
+                            <textarea 
+                                id="aiChatInput" 
+                                class="ai-chat-input" 
+                                placeholder="궁금한 점을 입력하세요..."
+                                rows="1"
+                                onkeydown="handleAIChatKeydown(event)"
+                            ></textarea>
+                            <button class="ai-chat-send-btn" onclick="sendAIMessage()" id="aiChatSendBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"/>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="ai-chat-bottom-actions">
+                        <!-- 자주 묻는 질문 (살짝만 보임) -->
+                        <button class="action-btn-compact" onclick="showTop10Questions()">
+                            <span class="btn-icon">📊</span>
+                            <span>자주 묻는 질문</span>
+                        </button>
+                        
+                        <!-- 대화 초기화 -->
+                        <button class="action-btn-compact reset-btn" onclick="clearAIChat()">
+                            <span class="btn-icon">🗑️</span>
+                            <span>대화 초기화</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 체질 요약 팝업 (v0.8.8) -->
+    <div class="constitution-summary-overlay" id="constitutionSummaryPopup" style="display: none;" onclick="closeConstitutionSummary()">
+        <div class="constitution-summary-popup" onclick="event.stopPropagation()">
+            <button class="popup-close-btn" onclick="closeConstitutionSummary()">✕</button>
+            <div id="constitutionSummaryContent"></div>
+        </div>
+    </div>
+
+    <!-- 가족 등록 팝업 -->
+    <div class="family-popup-overlay" id="addFamilyPopup" style="display: none;">
+        <div class="family-popup">
+            <h3 style="text-align: center; margin-bottom: 20px;">가족 등록</h3>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">이름</label>
+                <input type="text" id="familyNameInput" placeholder="이름을 입력하세요" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+            </div>
+            <div class="form-group" style="margin-bottom: 30px;">
+                <label style="display: block; margin-bottom: 12px; font-weight: 600;">체질 선택</label>
+                <div class="constitution-select-grid">
+                    <button class="constitution-select-btn" onclick="selectFamilyConstitution('목양')" data-constitution="목양">
+                        <span class="constitution-icon">🌳</span>
+                        <span class="constitution-name">목양</span>
+                    </button>
+                    <button class="constitution-select-btn" onclick="selectFamilyConstitution('목음')" data-constitution="목음">
+                        <span class="constitution-icon">🌲</span>
+                        <span class="constitution-name">목음</span>
+                    </button>
+                    <button class="constitution-select-btn" onclick="selectFamilyConstitution('토양')" data-constitution="토양">
+                        <span class="constitution-icon">🏔️</span>
+                        <span class="constitution-name">토양</span>
+                    </button>
+                    <button class="constitution-select-btn" onclick="selectFamilyConstitution('토음')" data-constitution="토음">
+                        <span class="constitution-icon">⛰️</span>
+                        <span class="constitution-name">토음</span>
+                    </button>
+                    <button class="constitution-select-btn" onclick="selectFamilyConstitution('금양')" data-constitution="금양">
+                        <span class="constitution-icon">⚡</span>
+                        <span class="constitution-name">금양</span>
+                    </button>
+                    <button class="constitution-select-btn" onclick="selectFamilyConstitution('금음')" data-constitution="금음">
+                        <span class="constitution-icon">💫</span>
+                        <span class="constitution-name">금음</span>
+                    </button>
+                    <button class="constitution-select-btn" onclick="selectFamilyConstitution('수양')" data-constitution="수양">
+                        <span class="constitution-icon">💧</span>
+                        <span class="constitution-name">수양</span>
+                    </button>
+                    <button class="constitution-select-btn" onclick="selectFamilyConstitution('수음')" data-constitution="수음">
+                        <span class="constitution-icon">🌊</span>
+                        <span class="constitution-name">수음</span>
+                    </button>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="action-btn secondary" onclick="closeAddFamilyPopup()" style="flex: 1;">취소</button>
+                <button class="action-btn primary" onclick="addFamilyMember()" style="flex: 1;">등록</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 하단 네비게이션 -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="goToHomeMain()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>홈</span>
+        </button>
+        <button class="nav-item" onclick="goToSurvey()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            <span>설문</span>
+        </button>
+        <button class="nav-item" onclick="goToAIChat()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <circle cx="9" cy="10" r="1"/>
+                <circle cx="15" cy="10" r="1"/>
+                <path d="M9 14a5 5 0 0 0 6 0"/>
+            </svg>
+            <span>AI 상담</span>
+        </button>
+        <button class="nav-item" onclick="goToDietTable()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+            </svg>
+            <span>섭생표</span>
+        </button>
+        <button class="nav-item" onclick="goToHospital()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            <span>병원</span>
+        </button>
+        <!-- <button class="nav-item" onclick="showComingSoon('마켓')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="9" cy="21" r="1"/>
+                <circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+            <span>마켓</span>
+        </button> -->
+    </nav>
+
+    <!-- 한의원 선택 팝업 -->
+    <div class="popup-overlay" id="hospitalSelectPopup" style="display: none;">
+        <div class="popup-content hospital-select-popup">
+            <div class="popup-header">
+                <h3>🏥 제휴 한의원 선택</h3>
+                <p style="color: #666; font-size: 0.9rem; margin-top: 8px;">
+                    함께하는 한의원을 선택해주세요
+                </p>
+            </div>
+            <div class="popup-body" style="max-height: 400px; overflow-y: auto;">
+                <div id="hospitalSelectList" class="hospital-select-list"></div>
+            </div>
+            <div class="popup-footer">
+                <button class="action-btn secondary" onclick="skipHospitalSelection()" style="width: 100%;">
+                    다음에 선택하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 한의원 소개 섹션 (홈 중간에 표시) -->
+    <!-- JavaScript -->
+    <script src="data/constitution-info.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/security.js"></script>
+    <script src="js/firebase-service.js"></script>
+    <script src="js/kakao-service.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/diet-table.js"></script>
+    <script src="js/home.js"></script>
+</body>
+</html>

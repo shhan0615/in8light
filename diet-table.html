@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IN8 - 8체질 섭생표</title>
+    
+    <!-- PWA 설정 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="in8">
+    <link rel="apple-touch-icon" href="images/icon-192.png">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/diet-table.css">
+</head>
+<body class="no-select">
+    <!-- 헤더 -->
+    <header class="diet-header">
+        <button class="back-btn" onclick="goBack()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+        </button>
+        <h1 class="header-title">8체질 섭생표</h1>
+        <div style="width: 40px;"></div>
+    </header>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="diet-main">
+        <!-- 체질 선택 화면 -->
+        <div id="constitutionSelect" class="constitution-select">
+            <div class="intro-section">
+                <h2>체질을 선택하세요</h2>
+                <p>각 체질에 맞는 음식 섭생표를 확인할 수 있습니다</p>
+            </div>
+            
+            <div class="constitution-grid">
+                <button class="constitution-card wood-yang" onclick="selectConstitution('목양')">
+                    <div class="card-icon">🌳</div>
+                    <div class="card-name">목양체질</div>
+                    <div class="card-subtitle">Pulmotonia</div>
+                </button>
+                
+                <button class="constitution-card wood-eum" onclick="selectConstitution('목음')">
+                    <div class="card-icon">🌲</div>
+                    <div class="card-name">목음체질</div>
+                    <div class="card-subtitle">Colonotonia</div>
+                </button>
+                
+                <button class="constitution-card earth-yang" onclick="selectConstitution('토양')">
+                    <div class="card-icon">🏔️</div>
+                    <div class="card-name">토양체질</div>
+                    <div class="card-subtitle">Pancreotonia</div>
+                </button>
+                
+                <button class="constitution-card earth-eum" onclick="selectConstitution('토음')">
+                    <div class="card-icon">⛰️</div>
+                    <div class="card-name">토음체질</div>
+                    <div class="card-subtitle">Gastrotonia</div>
+                </button>
+                
+                <button class="constitution-card metal-yang" onclick="selectConstitution('금양')">
+                    <div class="card-icon">⚡</div>
+                    <div class="card-name">금양체질</div>
+                    <div class="card-subtitle">Hepatonia</div>
+                </button>
+                
+                <button class="constitution-card metal-eum" onclick="selectConstitution('금음')">
+                    <div class="card-icon">💫</div>
+                    <div class="card-name">금음체질</div>
+                    <div class="card-subtitle">Cholecystonia</div>
+                </button>
+                
+                <button class="constitution-card water-yang" onclick="selectConstitution('수양')">
+                    <div class="card-icon">💧</div>
+                    <div class="card-name">수양체질</div>
+                    <div class="card-subtitle">Renotonia</div>
+                </button>
+                
+                <button class="constitution-card water-eum" onclick="selectConstitution('수음')">
+                    <div class="card-icon">🌊</div>
+                    <div class="card-name">수음체질</div>
+                    <div class="card-subtitle">Vesicotonia</div>
+                </button>
+            </div>
+            
+            <div class="info-footer">
+                <p class="info-text">※ 출처: 8체질의학(http://ecmed.org/)</p>
+            </div>
+        </div>
+
+        <!-- 음식 목록 화면 -->
+        <div id="foodList" class="food-list hidden">
+            <div class="list-header">
+                <button class="change-constitution-btn" onclick="showConstitutionSelect()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                    <span id="selectedConstitutionName">목양체질</span>
+                </button>
+            </div>
+
+            <!-- 검색 및 필터 섹션 -->
+            <div class="search-filter-section">
+                <div class="search-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="음식명을 검색하세요" oninput="filterFoods()">
+                    <button class="clear-btn" onclick="clearSearch()" id="clearBtn" style="display: none;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-label">필터:</div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-rating="all" onclick="toggleFilter(this, 'all')">
+                            전체
+                        </button>
+                        <button class="filter-btn" data-rating="OO" onclick="toggleFilter(this, 'OO')">
+                            <span class="rating-icon oo">●●</span>
+                        </button>
+                        <button class="filter-btn" data-rating="O" onclick="toggleFilter(this, 'O')">
+                            <span class="rating-icon o">●</span>
+                        </button>
+                        <button class="filter-btn" data-rating="Δ" onclick="toggleFilter(this, 'Δ')">
+                            <span class="rating-icon delta">△</span>
+                        </button>
+                        <button class="filter-btn" data-rating="X" onclick="toggleFilter(this, 'X')">
+                            <span class="rating-icon x">✕</span>
+                        </button>
+                        <button class="filter-btn" data-rating="XX" onclick="toggleFilter(this, 'XX')">
+                            <span class="rating-icon xx">✕✕</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 음식 목록 -->
+            <div id="foodItemsContainer" class="food-items-container">
+                <!-- 음식 항목들이 여기 동적으로 추가됩니다 -->
+            </div>
+
+            <!-- 검색 결과 없음 메시지 -->
+            <div id="noResultsMessage" class="no-results hidden">
+                <div class="no-results-icon">🔍</div>
+                <p>검색 결과가 없습니다</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 범례 팝업 -->
+    <div class="legend-popup" id="legendPopup">
+        <div class="legend-content">
+            <h3>섭생표 기호 설명</h3>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <span class="rating-badge oo">●●</span>
+                    <span class="legend-text">매우 좋음 - 적극 권장</span>
+                </div>
+                <div class="legend-item">
+                    <span class="rating-badge o">●</span>
+                    <span class="legend-text">좋음 - 권장</span>
+                </div>
+                <div class="legend-item">
+                    <span class="rating-badge delta">△</span>
+                    <span class="legend-text">보통 - 무관</span>
+                </div>
+                <div class="legend-item">
+                    <span class="rating-badge x">✕</span>
+                    <span class="legend-text">나쁨 - 주의</span>
+                </div>
+                <div class="legend-item">
+                    <span class="rating-badge xx">✕✕</span>
+                    <span class="legend-text">매우 나쁨 - 금지</span>
+                </div>
+            </div>
+            <button class="close-legend-btn" onclick="closeLegend()">확인</button>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/diet-table.js"></script>
+</body>
+</html>
